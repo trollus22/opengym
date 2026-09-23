@@ -21,7 +21,7 @@ services:
         fi
     restart: "no"
 
-  # Passkey auth + per-user data (Node, no framework).
+  # Username/password auth + per-user data (Node, no framework).
   # image: prebuilt (docker compose pull). build: from source (docker compose up --build).
   api:
     image: ghcr.io/duartesantos8/opengym-api:latest
@@ -33,13 +33,19 @@ services:
       - DATA_DIR=/data
       - COACH_CODEX_HOME=/codex
     volumes:
-      - ./data:/data         # users, passkeys, per-user state, session secret — BACK THIS UP
+      - ./data:/data         # session secret, VAPID keys, Coach config, legacy JSON backups
       # ChatGPT/Codex refresh tokens are kept separate from app data and mounted only into the
       # API container. This directory is owned by the unprivileged Coach runtime.
       - ./data/codex:/codex
+    networks:
+      - default
+      # Users, per-profile state, push subscriptions and invites live in Postgres — the Supabase
+      # stack already running on this box. Joining its network means the API reaches the database
+      # by service name: nothing extra is published, and no Supabase API key is involved.
+      - supabase
 
   # Builds the React frontend (multi-stage) and serves it, proxying /api → api
-  # and the exercise media from the shared volume. Single origin for passkeys.
+  # and the exercise media from the shared volume. Single origin for the app and the API.
   web:
     image: ghcr.io/duartesantos8/opengym-web:latest
     build:
@@ -56,3 +62,10 @@ services:
     volumes:
       - ./media/img:/usr/share/nginx/html/img:ro
       - ./media/gif:/usr/share/nginx/html/gif:ro
+
+networks:
+  # The Supabase stack this instance stores its users and state in. Created by that stack's own
+  # compose file, so it is referenced rather than owned here.
+  supabase:
+    external: true
+    name: supabase_default

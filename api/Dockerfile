@@ -19,7 +19,7 @@ RUN npm ci --omit=dev --include=optional \
  && npm cache clean --force \
  && node -e "import('@anthropic-ai/claude-agent-sdk').then(() => console.log('Claude Agent SDK ready'))" \
  && ./node_modules/.bin/codex --version
-COPY server.js ./
+COPY server.js store.js password.js ./
 COPY coach/ ./coach/
 ENV NODE_ENV=production
 EXPOSE 3000

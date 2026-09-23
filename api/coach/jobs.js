@@ -18,6 +18,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import * as cfgStore from './config.js';
 import { adapterFor } from './adapters/index.js';
+import { getState } from '../store.js';
 import * as payloadLib from './payload.js';
 import { extractJSON, validatePlan, validateReview, contractOK } from './validate.js';
 
@@ -56,9 +57,11 @@ export function clearUser(uid) {
   try { fs.unlinkSync(userFile(uid)); } catch { /* nothing to clear */ }
 }
 
+// The profile's state moved from ./data/state-<uid>.json into Postgres (store.js), which mirrors
+// the table in memory at boot — so this stays synchronous. The Coach cadence and the payload
+// builders call it from a timer and expect a value back, not a promise.
 export function readState(uid) {
-  try { return JSON.parse(fs.readFileSync(path.join(DATA, 'state-' + safe(uid) + '.json'), 'utf8')); }
-  catch { return null; }
+  return getState(uid);
 }
 
 /* ---------- caps ---------- */

@@ -7,10 +7,10 @@ import { fmtDate, fmtNum, fmtVol, fmtDur } from '../lib/format.js'
 import { workoutVolume, setsDone } from '../lib/history.js'
 import { confirmSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
-import { Button } from '../components/ui.jsx'
+import { Button, TextField } from '../components/ui.jsx'
 import AdminCoach from './AdminCoach.jsx'
 
-// Admin-only operator dashboard (owner passkey + admin flag; guarded again server-side).
+// Admin-only operator dashboard (owner account + admin flag; guarded again server-side).
 // Deliberately English-only — it isn't part of the translated end-user surface, so it stays
 // out of the per-language string packs.
 
@@ -27,6 +27,7 @@ const dur = ms => { const m = Math.max(0, Math.floor(ms / 60000)); return m < 60
 function UserDetail({ id, onChanged, close }) {
   const [d, setD] = useState(null)
   const toast = useUI(s => s.toast)
+  const openSheet = useUI(s => s.openSheet)
   useEffect(() => { api('/api/admin/user?id=' + encodeURIComponent(id)).then(setD).catch(e => toast(e.message)) }, [id])
   if (!d) return <div className="muted small">Loading…</div>
   const u = d.user
@@ -38,6 +39,7 @@ function UserDetail({ id, onChanged, close }) {
   return <>
     <h3 className="capitalize">{u.name}</h3>
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', margin: '8px 0 12px' }}>
+      {u.username && <span className="tag">@{u.username}</span>}
       {u.admin && <span className="tag acc">admin</span>}
       {u.disabled && <span className="tag" style={{ color: 'var(--red)' }}>disabled</span>}
       {u.invitedBy && <span className="tag">invite {u.invitedBy}</span>}
@@ -53,6 +55,9 @@ function UserDetail({ id, onChanged, close }) {
       onClick={() => u.disabled ? setDisabled(false)
         : confirmSheet({ title: 'Disable ' + u.name + '?', message: 'They are signed out everywhere and can no longer sync or log in until re-enabled.', confirmText: 'Disable', danger: true, onConfirm: () => setDisabled(true) })}>
       {u.disabled ? 'Enable account' : 'Disable account'}</button>}
+    {/* No "forgot password" e-mail exists on a self-hosted box, so the owner is the reset path. */}
+    <button className="btn" style={{ margin: '0 0 4px' }}
+      onClick={() => openSheet(close => <ResetPassword id={u.id} name={u.name} close={close} />)}>Reset password</button>
     <h4 className="sec">Workout history</h4>
     {d.workouts.length ? <div className="list" style={{ gap: 0 }}>
       {d.workouts.slice(0, 60).map(w => <div key={w.id} className="row between" style={{ padding: '9px 2px', borderBottom: '1px solid var(--sep)' }}>
@@ -61,6 +66,31 @@ function UserDetail({ id, onChanged, close }) {
         <span className="small muted">{fmtVol(w.vol ?? workoutVolume(w), d.unit)}</span>
       </div>)}
     </div> : <div className="empty small">No workouts logged.</div>}
+  </>
+}
+
+function ResetPassword({ id, name, close }) {
+  const toast = useUI(s => s.toast)
+  const [pw, setPw] = useState('')
+  const [busy, setBusy] = useState(false)
+  const go = async () => {
+    setBusy(true)
+    try {
+      await api('/api/admin/user/password', { method: 'POST', body: JSON.stringify({ id, password: pw }) })
+      close()
+      toast('New password set for ' + name + ' — their other sessions are signed out')
+    } catch (e) { toast(e.message) }
+    finally { setBusy(false) }
+  }
+  return <>
+    <h3>Reset password</h3>
+    <div className="muted small" style={{ marginBottom: 14 }}>
+      Sets a new password for {name} and signs their other devices out. Pass it to them out of band —
+      there is no e-mail on this instance, and you will not be able to read it back.
+    </div>
+    <TextField type="password" value={pw} onChange={e => setPw(e.target.value)} placeholder="New password" autoComplete="new-password" />
+    <div style={{ height: 12 }} />
+    <Button variant="primary" onClick={go} disabled={busy || pw.length < 8}>{busy ? 'Saving…' : 'Set password'}</Button>
   </>
 }
 

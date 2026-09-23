@@ -8,6 +8,9 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+// Static, unlike the coach modules below: store.js reads DATA_DIR only for the one-time legacy
+// import, which no test path reaches, so there is nothing order-dependent about loading it early.
+import { primeState } from '../store.js';
 
 export function tempData() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'coach-test-'));
@@ -16,8 +19,14 @@ export function tempData() {
   return dir;
 }
 
-export function writeState(dir, uid, S) {
-  fs.writeFileSync(path.join(dir, 'state-' + uid + '.json'), JSON.stringify(S));
+/** Put a profile's state where the server would look for it.
+ *
+ *  This used to write ./data/state-<uid>.json, which is where coach/jobs.js read it back from.
+ *  State lives in Postgres now (store.js), which keeps an in-memory mirror of the table — so
+ *  priming that mirror is exactly equivalent, and lets the Coach be tested without a database.
+ *  The `dir` argument is kept because the call sites pass it; DATA_DIR no longer matters here. */
+export function writeState(_dir, uid, S) {
+  primeState(uid, S);
 }
 
 /** A profile that has consented and has some history — the usual starting point. */

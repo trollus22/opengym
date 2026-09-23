@@ -1,14 +1,20 @@
-/* opengym-api — passkey (WebAuthn) auth + per-user state storage for openGym
-   No framework, JSON-file storage, signed session cookies.               */
+/* opengym-api — username/password auth + per-user state storage for openGym.
+   No framework, Postgres storage, signed session cookies.
+
+   This fork replaced upstream's WebAuthn (passkey) sign-in with a username and a password
+   hashed with scrypt, and moved the storage out of ./data/*.json and into Postgres — the
+   self-hosted Supabase on this box. See docs/AUTH.md.
+
+   What did not change is the session: still one HMAC-signed cookie. So every route below reads
+   exactly the way it always did, and the passkey-era trick of "sign out everywhere" still works
+   for the same reason — the cookie carries the account's session-version counter. */
 import http from 'node:http';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import {
-  generateRegistrationOptions, verifyRegistrationResponse,
-  generateAuthenticationOptions, verifyAuthenticationResponse
-} from '@simplewebauthn/server';
 import webpush from 'web-push';
+import * as store from './store.js';
+import { hashPassword, verifyPassword, passwordProblem, DUMMY_HASH, MIN_PASSWORD } from './password.js';
 import * as coachConfig from './coach/config.js';
 import * as coachJobs from './coach/jobs.js';
 import { coachRoutes } from './coach/routes.js';
@@ -16,9 +22,14 @@ import { startCadence } from './coach/cadence.js';
 
 const PORT = +(process.env.PORT || 3000);
 const DATA = process.env.DATA_DIR || '/data';
-const RP_ID = process.env.RP_ID || 'localhost';
+// Only used to decide whether the session cookie carries the Secure flag (and as the Web Push
+// subject fallback). Auth itself is no longer bound to a hostname — which is what used to break
+// every time a tunnel handed the app a new URL: passkeys are cryptographically tied to a domain,
+// a username and a password are not.
 const ORIGIN = process.env.ORIGIN || 'http://localhost:8080';
-const RP_NAME = process.env.RP_NAME || 'openGym';
+// Usernames are case-insensitive and deliberately boring: they end up in the admin dashboard,
+// in invite notes and in the Coach log, and every extra character is one more thing to escape.
+const USERNAME_RE = /^[a-zA-Z0-9._-]{3,32}$/;
 // Admin dashboard (issue): admins are matched by uid; INVITE_ONLY gates new signups behind a
 // code the admin generates. Both default off so a fresh self-hosted instance stays open.
 const ADMIN_UIDS = (process.env.ADMIN_UIDS || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -44,22 +55,15 @@ const secretFile = path.join(DATA, 'secret');
 if (!fs.existsSync(secretFile)) fs.writeFileSync(secretFile, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
 const SECRET = fs.readFileSync(secretFile, 'utf8').trim();
 
-const dbFile = path.join(DATA, 'db.json');
-let db = { users: [], creds: [], subs: [], invites: [] };
-try { db = JSON.parse(fs.readFileSync(dbFile, 'utf8')); } catch {}
-db.subs = db.subs || [];
-db.invites = db.invites || [];
+// Users, per-profile state, push subscriptions and invites now live in Postgres. Boot loads the
+// tables into memory (store.js), so everything below reads synchronously exactly as it did when
+// this was a JSON file — and `db` is the same live object either way, which is why the mutation
+// sites further down did not have to change.
+await store.init();
+const db = store.db;
 const isAdmin = user => !!user && (user.admin === true || ADMIN_UIDS.includes(user.id));
-function saveDb() { atomicWrite(dbFile, JSON.stringify(db, null, 2)); }
-function atomicWrite(file, content) {
-  const tmp = file + '.tmp';
-  fs.writeFileSync(tmp, content);
-  fs.renameSync(tmp, file);
-}
-const stateFile = uid => path.join(DATA, 'state-' + uid.replace(/[^a-zA-Z0-9_-]/g, '') + '.json');
-function readState(uid) {
-  try { return JSON.parse(fs.readFileSync(stateFile(uid), 'utf8')); } catch { return null; }
-}
+const saveDb = store.saveDb;
+const readState = store.getState;
 
 /* ---------- push notifications (Web Push / VAPID) ---------- */
 const vapidFile = path.join(DATA, 'vapid.json');
@@ -212,20 +216,43 @@ function sessionCookie(user) {
 }
 const clearCookie = `gymsid=; Path=/; Max-Age=0; HttpOnly;${SECURE} SameSite=Lax`;
 
-/* ---------- challenge store (in-memory, 5 min TTL) ---------- */
-const challenges = new Map(); // cid -> {challenge, name?, uid?, exp}
-function putChallenge(data) {
-  const cid = crypto.randomBytes(16).toString('base64url');
-  challenges.set(cid, { ...data, exp: Date.now() + 5 * 60000 });
-  return cid;
+/* ---------- login throttle (in-memory) ---------- */
+// A password endpoint is guessable in a way a passkey never was, so there has to be a brake.
+// This is not a substitute for rate limiting at the reverse proxy — it is a per-username,
+// per-client brake that makes online guessing pointless without ever locking an account out
+// for good: the slate clears 15 minutes after the last failure, and a correct password clears
+// it immediately. Passwords themselves are never kept, so nothing here has to be protected.
+const LOGIN_MAX_FAILURES = 10;
+const LOGIN_WINDOW_MS = 15 * 60000;
+const loginFailures = new Map();          // "<username>|<ip>" -> { count, last }
+function clientIp(req) {
+  // Cloudflare sets CF-Connecting-IP to the real client and does not carry a client-supplied one
+  // forward, so behind the tunnel it is the only value worth trusting — and with every visitor
+  // arriving through one local cloudflared process, the socket address would otherwise be the same
+  // for everyone, which would make one stranger's wrong guesses throttle the owner too. The
+  // X-Forwarded-For chain nginx appends to is the next best thing; the socket is the floor.
+  const cf = String(req.headers['cf-connecting-ip'] || '').trim();
+  if (cf) return cf;
+  const fwd = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return fwd || req.socket?.remoteAddress || 'unknown';
 }
-function takeChallenge(cid) {
-  const c = challenges.get(cid);
-  challenges.delete(cid);
-  if (!c || c.exp < Date.now()) return null;
-  return c;
+function loginBlocked(key) {
+  const e = loginFailures.get(key);
+  if (!e) return false;
+  if (Date.now() - e.last > LOGIN_WINDOW_MS) { loginFailures.delete(key); return false; }
+  return e.count >= LOGIN_MAX_FAILURES;
 }
-setInterval(() => { for (const [k, v] of challenges) if (v.exp < Date.now()) challenges.delete(k); }, 60000).unref();
+function noteLoginFailure(key) {
+  const now = Date.now();
+  const e = loginFailures.get(key);
+  if (!e || now - e.last > LOGIN_WINDOW_MS) loginFailures.set(key, { count: 1, last: now });
+  else { e.count++; e.last = now; }
+}
+const clearLoginFailures = key => loginFailures.delete(key);
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of loginFailures) if (now - v.last > LOGIN_WINDOW_MS) loginFailures.delete(k);
+}, 60000).unref();
 
 /* ---------- helpers ---------- */
 function json(res, code, obj, extraHeaders) {
@@ -248,7 +275,9 @@ function readBody(req) {
     req.on('error', reject);
   });
 }
-const b64uToBuf = s => Buffer.from(s, 'base64url');
+// What the client is allowed to know about the caller. No hash, no session version, no flags a
+// user cannot already see in their own settings.
+const publicUser = user => ({ id: user.id, username: user.username, name: user.name, admin: isAdmin(user) });
 
 /* ---------- live presence (in-memory) ---------- */
 // Clients heartbeat /api/activity while a workout is on screen; the admin dashboard reads who's
@@ -273,107 +302,100 @@ const routes = {
   // the app it was before the feature existed.
   'GET /api/config': async (req, res) => {
     const coach = coachConfig.publicConfig();
-    json(res, 200, { invite_only: INVITE_ONLY, ...(coach ? { coach } : {}) });
+    // password_min is published so the sign-up form can enforce the same floor the server does —
+    // otherwise the rule is only discovered after a round trip, and only when you get it wrong.
+    json(res, 200, { invite_only: INVITE_ONLY, password_min: MIN_PASSWORD, ...(coach ? { coach } : {}) });
   },
 
   'GET /api/me': async (req, res) => {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
-    json(res, 200, { user: { id: user.id, name: user.name, admin: isAdmin(user) } });
+    json(res, 200, { user: publicUser(user) });
   },
 
-  'POST /api/register/options': async (req, res) => {
+  // Create a profile. The invite gate is checked here and burned in the same breath as the
+  // insert, so two people racing the same code cannot both get in on it.
+  'POST /api/register': async (req, res) => {
     const body = await readBody(req);
-    const name = String(body.name || '').trim().slice(0, 40);
-    if (!name) return json(res, 400, { error: 'name required' });
+    const username = String(body.username || '').trim();
+    const password = String(body.password || '');
+    if (!username) return json(res, 400, { error: 'username required' });
+    if (!USERNAME_RE.test(username))
+      return json(res, 400, { error: 'username must be 3-32 characters: letters, numbers, dot, dash or underscore' });
+    const pwProblem = passwordProblem(password);
+    if (pwProblem) return json(res, 400, { error: pwProblem });
+    if (store.findByUsername(username)) return json(res, 409, { error: 'that username is already taken' });
+
     const code = String(body.code || '').trim().toUpperCase();
-    if (INVITE_ONLY && !db.invites.some(i => i.code === code && !i.usedBy && !i.revoked))
-      return json(res, 403, { error: 'a valid invite code is required' });
-    const uid = crypto.randomBytes(12).toString('base64url');
-    const options = await generateRegistrationOptions({
-      rpName: RP_NAME, rpID: RP_ID,
-      userID: Buffer.from(uid), userName: name, userDisplayName: name,
-      attestationType: 'none',
-      authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' },
-      excludeCredentials: []
-    });
-    const cid = putChallenge({ challenge: options.challenge, name, uid, code });
-    json(res, 200, { cid, options });
-  },
-
-  'POST /api/register/verify': async (req, res) => {
-    const body = await readBody(req);
-    const c = takeChallenge(body.cid);
-    if (!c || !c.uid) return json(res, 400, { error: 'challenge expired — try again' });
-    let verification;
-    try {
-      verification = await verifyRegistrationResponse({
-        response: body.credential,
-        expectedChallenge: c.challenge,
-        expectedOrigin: ORIGIN,
-        expectedRPID: RP_ID,
-        requireUserVerification: false
-      });
-    } catch (e) { return json(res, 400, { error: 'verification failed: ' + e.message }); }
-    if (!verification.verified) return json(res, 400, { error: 'not verified' });
-    const { credential } = verification.registrationInfo;
-    if (db.creds.find(x => x.id === credential.id)) return json(res, 409, { error: 'credential already registered' });
-    // Re-check the invite at the last moment (it may have been used/revoked since options), then burn it.
     let invite = null;
     if (INVITE_ONLY) {
-      invite = db.invites.find(i => i.code === c.code && !i.usedBy && !i.revoked);
-      if (!invite) return json(res, 403, { error: 'invite code is no longer valid — ask for a new one' });
+      invite = db.invites.find(i => i.code === code && !i.usedBy && !i.revoked);
+      if (!invite) return json(res, 403, { error: 'a valid invite code is required' });
     }
-    const user = { id: c.uid, name: c.name, created: new Date().toISOString() };
-    if (invite) { user.invitedBy = invite.code; invite.usedBy = user.id; invite.usedAt = user.created; }
-    db.users.push(user);
-    db.creds.push({
-      id: credential.id, userId: user.id,
-      publicKey: Buffer.from(credential.publicKey).toString('base64url'),
-      counter: credential.counter || 0,
-      transports: body.credential?.response?.transports || []
-    });
-    saveDb();
-    json(res, 200, { user: { id: user.id, name: user.name, admin: isAdmin(user) } }, { 'Set-Cookie': sessionCookie(user) });
+
+    const user = {
+      id: crypto.randomBytes(12).toString('base64url'),
+      username,
+      password_hash: hashPassword(password),
+      name: username,
+      admin: false,
+      disabled: false,
+      sv: 0,
+      created: new Date().toISOString()
+    };
+    // The unique index on username_lc is what actually decides this; the lookup above is only
+    // there to give a nicer error. If two requests race for the same name, exactly one insert wins.
+    const created = await store.createUser(user);
+    if (!created) return json(res, 409, { error: 'that username is already taken' });
+    if (invite) { user.invitedBy = invite.code; invite.usedBy = user.id; invite.usedAt = user.created; saveDb(); }
+    console.log('register', user.username);
+    json(res, 200, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(user) });
   },
 
-  'POST /api/login/options': async (req, res) => {
-    const options = await generateAuthenticationOptions({
-      rpID: RP_ID, userVerification: 'preferred', allowCredentials: []
-    });
-    const cid = putChallenge({ challenge: options.challenge });
-    json(res, 200, { cid, options });
-  },
-
-  'POST /api/login/verify': async (req, res) => {
+  // Sign in with the username and the password. A wrong password and an unknown username are
+  // answered with the same status, the same body and the same ~100ms, so this endpoint cannot be
+  // used to work out who has an account here.
+  'POST /api/login': async (req, res) => {
     const body = await readBody(req);
-    const c = takeChallenge(body.cid);
-    if (!c) return json(res, 400, { error: 'challenge expired — try again' });
-    const cred = db.creds.find(x => x.id === body.credential?.id);
-    if (!cred) return json(res, 404, { error: 'unknown passkey — create a profile first' });
-    let verification;
-    try {
-      verification = await verifyAuthenticationResponse({
-        response: body.credential,
-        expectedChallenge: c.challenge,
-        expectedOrigin: ORIGIN,
-        expectedRPID: RP_ID,
-        requireUserVerification: false,
-        credential: {
-          id: cred.id,
-          publicKey: b64uToBuf(cred.publicKey),
-          counter: cred.counter,
-          transports: cred.transports
-        }
-      });
-    } catch (e) { return json(res, 400, { error: 'verification failed: ' + e.message }); }
-    if (!verification.verified) return json(res, 400, { error: 'not verified' });
-    cred.counter = verification.authenticationInfo.newCounter;
-    saveDb();
-    const user = db.users.find(u => u.id === cred.userId);
-    if (!user) return json(res, 500, { error: 'user missing' });
+    const username = String(body.username || '').trim();
+    const password = String(body.password || '');
+    const ip = clientIp(req);
+    const userKey = username.toLowerCase() + '|' + ip;
+    const ipKey = '|' + ip;
+    if (loginBlocked(userKey) || loginBlocked(ipKey))
+      return json(res, 429, { error: 'too many failed attempts — try again in a few minutes' });
+    const user = store.findByUsername(username);
+    const ok = verifyPassword(password, user ? user.password_hash : DUMMY_HASH);
+    if (!user || !ok) {
+      noteLoginFailure(userKey);
+      noteLoginFailure(ipKey);
+      return json(res, 401, { error: 'wrong username or password' });
+    }
     if (user.disabled) return json(res, 403, { error: 'this account has been disabled' });
-    json(res, 200, { user: { id: user.id, name: user.name, admin: isAdmin(user) } }, { 'Set-Cookie': sessionCookie(user) });
+    clearLoginFailures(userKey);
+    console.log('login', user.username);
+    json(res, 200, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(user) });
+  },
+
+  // Change your own password. Bumping the session version signs every other device out, which is
+  // the point: a password change you made because someone else might know the old one is not much
+  // of a change if their session survives it. This device is handed a fresh cookie on the way
+  // out, so the person doing it stays where they are.
+  'POST /api/account/password': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const current = String(body.current || '');
+    const next = String(body.next || '');
+    if (!verifyPassword(current, user.password_hash)) return json(res, 403, { error: 'current password is wrong' });
+    const pwProblem = passwordProblem(next);
+    if (pwProblem) return json(res, 400, { error: pwProblem });
+    if (next === current) return json(res, 400, { error: 'the new password is the same as the old one' });
+    user.password_hash = hashPassword(next);
+    user.sv = sessionVersion(user) + 1;
+    saveDb();
+    console.log('password changed', user.username);
+    json(res, 200, { ok: true }, { 'Set-Cookie': sessionCookie(user) });
   },
 
   'POST /api/logout': async (req, res) => json(res, 200, { ok: true }, { 'Set-Cookie': clearCookie }),
@@ -393,10 +415,7 @@ const routes = {
   'GET /api/data': async (req, res) => {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
-    try {
-      const state = JSON.parse(fs.readFileSync(stateFile(user.id), 'utf8'));
-      json(res, 200, { state });
-    } catch { json(res, 200, { state: null }); }
+    json(res, 200, { state: readState(user.id) });
   },
 
   'PUT /api/data': async (req, res) => {
@@ -405,7 +424,9 @@ const routes = {
     const body = await readBody(req);
     if (!body.state || typeof body.state !== 'object') return json(res, 400, { error: 'state required' });
     delete body.state.active;              // in-progress workouts stay device-local
-    atomicWrite(stateFile(user.id), JSON.stringify(body.state));
+    // Awaited on purpose: the client is told its state is safe only once Postgres has committed
+    // it. One JSONB row, replaced whole — which is exactly what the client already sends.
+    await store.putState(user.id, body.state);
     json(res, 200, { ok: true, ts: body.state._ts || null });
   },
 
@@ -502,7 +523,7 @@ const routes = {
     if (!u) return json(res, 404, { error: 'no such user' });
     const S = readState(u.id) || {};
     json(res, 200, {
-      user: { id: u.id, name: u.name, created: u.created || null, disabled: !!u.disabled, admin: isAdmin(u), invitedBy: u.invitedBy || null },
+      user: { id: u.id, username: u.username || null, name: u.name, created: u.created || null, disabled: !!u.disabled, admin: isAdmin(u), invitedBy: u.invitedBy || null },
       unit: S.unit || 'kg',
       lastSync: S._ts || null,
       routines: (S.routines || []).map(r => ({ id: r.id, name: r.name, emoji: r.emoji, count: (r.ex || []).length })),
@@ -521,6 +542,23 @@ const routes = {
     if (u.disabled) presence.delete(u.id);   // drop them off "training now" at once
     saveDb();
     json(res, 200, { ok: true, id: u.id, disabled: u.disabled });
+  },
+
+  // Reset somebody else's password. A self-hosted box has no "forgot password" e-mail, so the
+  // owner has to be able to hand a profile a new password — and every session that profile had
+  // dies with the change, which is usually the reason you are doing this at all.
+  'POST /api/admin/user/password': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    const body = await readBody(req);
+    const u = store.findUser(String(body.id || ''));
+    if (!u) return json(res, 404, { error: 'no such user' });
+    const pwProblem = passwordProblem(body.password);
+    if (pwProblem) return json(res, 400, { error: pwProblem });
+    u.password_hash = hashPassword(String(body.password));
+    u.sv = sessionVersion(u) + 1;
+    saveDb();
+    console.log('admin password reset', u.username);
+    json(res, 200, { ok: true, id: u.id });
   },
 
   'GET /api/admin/invites': async (req, res) => {
@@ -592,4 +630,4 @@ http.createServer(async (req, res) => {
     console.error(key, e);
     if (!res.headersSent) json(res, 500, { error: 'server error' });
   }
-}).listen(PORT, () => console.log(`gym-api on :${PORT} (rpID=${RP_ID}, origin=${ORIGIN})`));
+}).listen(PORT, () => console.log(`gym-api on :${PORT} (origin=${ORIGIN}, auth=username+password)`));
