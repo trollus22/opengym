@@ -31,92 +31,96 @@
 
 /* ---------------------------------------------------------------- tokens -- */
 :root {
-  /* surfaces — dark is the default */
+  /* Apple iOS surfaces — dark is pure OLED black */
   --bg:        #000000;
-  --bg-el:     #111318;   /* elevated backdrop (sheets, bars) */
-  --surface:   #191b20;   /* card / grouped-list fill */
-  --surface-2: #21242b;   /* pressed + nested fill */
-  --surface-3: #2b2f38;   /* controls (segmented track, switch off) */
+  --bg-el:     #1c1c1e;   /* Secondary system background (sheets, bars) */
+  --surface:   #1c1c1e;   /* Grouped secondary system background (cards, lists) */
+  --surface-2: #2c2c2e;   /* Tertiary system background (pressed, nested) */
+  --surface-3: #3a3a3c;   /* Quaternary system background (segmented track, switch off) */
 
-  /* text */
+  /* text — Apple Dynamic System Gray labels */
   --label:     #ffffff;
-  --label-2:   rgba(235,235,245,.60);
-  --label-3:   rgba(235,235,245,.32);
-  --label-4:   rgba(235,235,245,.18);
+  --label-2:   rgba(235, 235, 245, 0.60);
+  --label-3:   rgba(235, 235, 245, 0.32);
+  --label-4:   rgba(235, 235, 245, 0.18);
 
-  /* lines */
-  --sep:       rgba(84,84,88,.60);
-  --sep-op:    rgba(84,84,88,.34);   /* for edges sitting over blur */
+  /* lines — Apple sub-pixel hairlines */
+  --sep:       rgba(84, 84, 88, 0.55);
+  --sep-op:    rgba(84, 84, 88, 0.28);   /* for edges sitting over blur */
   --hair:      .5px;
 
-  /* system palette (Tempo-matched, tuned per theme for contrast) */
-  --blue:#2f6ff0; --green:#2dbe5f; --red:#ff453a; --orange:#ff9f0a;
-  --yellow:#ffd60a; --teal:#40c8e0; --indigo:#5e5ce6; --pink:#ff375f;
-  --purple:#bf5af2; --mint:#63e6e2; --brown:#ac8e68; --grey:#8e8e93;
+  /* Apple iOS HIG System Palette */
+  --blue:   #0a84ff; --green:  #30d158; --red:    #ff453a; --orange: #ff9f0a;
+  --yellow: #ffd60a; --teal:   #40c8e0; --indigo: #5e5ce6; --pink:   #ff375f;
+  --purple: #bf5af2; --mint:   #63e6e2; --brown:  #ac8e68; --grey:   #8e8e93;
 
   /* accent (per-account, synced) */
-  --acc:  var(--blue);
-  --acc-2:#1e52c7;
-  --on-acc:#ffffff;
-  --acc-soft: color-mix(in srgb, var(--acc) 16%, transparent);
+  --acc:      var(--blue);
+  --acc-2:    #0062cc;
+  --on-acc:   #ffffff;
+  --acc-soft: color-mix(in srgb, var(--acc) 18%, transparent);
   --acc-line: color-mix(in srgb, var(--acc) 38%, transparent);
 
-  /* geometry */
-  --r-sm:10px; --r:14px; --r-lg:18px; --r-xl:24px; --r-card:16px;
-  --pad:16px;
-  --icon-stroke:1.7;
+  /* geometry — Apple continuous squircle feel */
+  --r-sm:   10px;
+  --r:      14px;
+  --r-lg:   18px;
+  --r-xl:   26px;
+  --r-card: 16px;
+  --pad:    16px;
+  --icon-stroke: 1.75;
 
-  /* motion */
-  --ease:cubic-bezier(.32,.72,0,1);
-  --fast:140ms; --med:220ms;
+  /* Apple fluid physics motion (WWDC Designing Fluid Interfaces) */
+  --ease:          cubic-bezier(0.32, 0.72, 0, 1);    /* critically damped default */
+  --ease-spring:   cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-bounce:   cubic-bezier(0.34, 1.35, 0.64, 1);  /* momentum flick bounce (~0.8 damping) */
+  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);     /* iOS fluid deceleration */
+  --fast:          120ms;
+  --med:           260ms;
+  --spring-dur:    360ms;
 
-  --sab:env(safe-area-inset-bottom,0px);
-  --sat:env(safe-area-inset-top,0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sat: env(safe-area-inset-top, 0px);
 }
 
 :root[data-theme="light"] {
-  --bg:        #f3f5f8;
-  --bg-el:     #fafbfc;
-  --surface:   #ffffff;
-  --surface-2: #edeff2;
-  --surface-3: #e6e9ee;
+  --bg:        #f2f2f7;   /* System Grouped Background */
+  --bg-el:     #ffffff;   /* System Background */
+  --surface:   #ffffff;   /* Secondary Grouped Background (cards, lists) */
+  --surface-2: #e5e5ea;   /* Tertiary Grouped Background (nested, pressed) */
+  --surface-3: #d1d1d6;   /* Quaternary Grouped Background */
 
-  --label:     #111318;
-  --label-2:   #5b636e;
-  --label-3:   #98a2b3;
-  --label-4:   #c3cad4;
+  --label:     #000000;
+  --label-2:   rgba(60, 60, 67, 0.60);
+  --label-3:   rgba(60, 60, 67, 0.32);
+  --label-4:   rgba(60, 60, 67, 0.18);
 
-  --sep:       #e6e9ee;
-  --sep-op:    #edeff2;
+  --sep:       rgba(60, 60, 67, 0.28);
+  --sep-op:    rgba(60, 60, 67, 0.15);
 
-  --blue:#2f6ff0; --green:#2dbe5f; --red:#e5484d; --orange:#f5a524;
-  --yellow:#ffcc00; --teal:#30b0c7; --indigo:#5856d6; --pink:#ff2d55;
-  --purple:#af52de; --mint:#00c7be; --brown:#a2845e; --grey:#8e8e93;
-  --acc-2:#1e52c7;
-  --on-acc:#ffffff;
+  --blue:   #007aff; --green:  #34c759; --red:    #ff3b30; --orange: #ff9500;
+  --yellow: #ffcc00; --teal:   #30b0c7; --indigo: #5856d6; --pink:   #ff2d55;
+  --purple: #af52de; --mint:   #00c7be; --brown:  #a2845e; --grey:   #8e8e93;
+  --acc-2:  #0056b3;
+  --on-acc: #ffffff;
 }
 
-/* accents — Apple's system colours, so a recolour never looks off-system */
-:root[data-accent="lime"]  { --acc:var(--green);  --acc-2:#248a3d; --on-acc:#000 }
-:root[data-accent="sky"]   { --acc:var(--blue);   --acc-2:#1e52c7; --on-acc:#fff }
-:root[data-accent="orange"]{ --acc:var(--orange); --acc-2:#c76b00; --on-acc:#000 }
-:root[data-accent="violet"]{ --acc:var(--purple); --acc-2:#8944ab; --on-acc:#fff }
-:root[data-accent="pink"]  { --acc:var(--pink);   --acc-2:#d70036; --on-acc:#fff }
-:root[data-accent="red"]   { --acc:var(--red);    --acc-2:#d70015; --on-acc:#fff }
-:root[data-accent="teal"]  { --acc:var(--teal);   --acc-2:#0071a4; --on-acc:#000 }
-:root[data-accent="gold"]  { --acc:var(--yellow); --acc-2:#b25000; --on-acc:#000 }
-/* Label colour on a filled accent button is picked per accent by measured contrast,
-   not by taste. Button text is 17px/600, so the AA bar is 3:1 (large text). White on
-   the light-theme green is 2.22:1 and on teal 2.57:1 — both fail, and green is the
-   DEFAULT accent, so every primary button in light mode was failing. Black scores
-   9.46 / 8.16 there. Blue, purple, pink and red keep white (3.5–4.1:1), which both
-   passes and matches the platform convention. */
+/* accents — Apple system colours */
+:root[data-accent="lime"]   { --acc: var(--green);  --acc-2: #248a3d; --on-acc: #000 }
+:root[data-accent="sky"]    { --acc: var(--blue);   --acc-2: #0062cc; --on-acc: #fff }
+:root[data-accent="orange"] { --acc: var(--orange); --acc-2: #c76b00; --on-acc: #000 }
+:root[data-accent="violet"] { --acc: var(--purple); --acc-2: #8944ab; --on-acc: #fff }
+:root[data-accent="pink"]   { --acc: var(--pink);   --acc-2: #d70036; --on-acc: #fff }
+:root[data-accent="red"]    { --acc: var(--red);    --acc-2: #d70015; --on-acc: #fff }
+:root[data-accent="teal"]   { --acc: var(--teal);   --acc-2: #0071a4; --on-acc: #000 }
+:root[data-accent="gold"]   { --acc: var(--yellow); --acc-2: #b25000; --on-acc: #000 }
+
 :root[data-theme="light"][data-accent="lime"],
-:root[data-theme="light"][data-accent="teal"]  { --on-acc:#000 }
+:root[data-theme="light"][data-accent="teal"]  { --on-acc: #000 }
 :root[data-theme="light"][data-accent="sky"],
 :root[data-theme="light"][data-accent="violet"],
 :root[data-theme="light"][data-accent="pink"],
-:root[data-theme="light"][data-accent="red"]   { --on-acc:#fff }
+:root[data-theme="light"][data-accent="red"]   { --on-acc: #fff }
 
 /* ---------------------------------------------------------------- reset -- */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -126,8 +130,8 @@ html{
 }
 body{
   background:var(--bg);color:var(--label);
-  font-family:'Manrope',-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Segoe UI',Roboto,system-ui,sans-serif;
-  font-size:17px;line-height:1.29;letter-spacing:-.01em;
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','SF Pro Display','Manrope','Segoe UI',Roboto,system-ui,sans-serif;
+  font-size:17px;line-height:1.41;letter-spacing:-.01em;
   min-height:100vh;overscroll-behavior-y:none;overflow-x:clip;
   -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
   touch-action:manipulation;
@@ -151,26 +155,21 @@ button,.chip,.tile,.item,.wday,.cal-d,.swatch,.hm-c,.lrow,.seg button,.stp butto
 
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 
-/* ------------------------------------------------------------ type scale -- */
-.t-large  {font-size:34px;line-height:1.06;font-weight:700;letter-spacing:-.028em}
-.t-title  {font-size:28px;line-height:1.12;font-weight:700;letter-spacing:-.024em}
-.t-title2 {font-size:22px;line-height:1.18;font-weight:700;letter-spacing:-.021em}
-.t-head   {font-size:17px;line-height:1.29;font-weight:600;letter-spacing:-.012em}
-.t-body   {font-size:17px;line-height:1.29;font-weight:400;letter-spacing:-.012em}
-.t-callout{font-size:16px;line-height:1.31;font-weight:400;letter-spacing:-.009em}
-.t-sub    {font-size:15px;line-height:1.33;font-weight:400;letter-spacing:-.006em}
-.t-foot   {font-size:13px;line-height:1.38;font-weight:400;letter-spacing:-.001em}
-.t-cap    {font-size:12px;line-height:1.33;font-weight:400;letter-spacing:0}
+/* ------------------------------------------------------------ type scale (SF Pro Optical) -- */
+.t-large  {font-size:34px;line-height:1.08;font-weight:700;letter-spacing:-.032em;font-optical-sizing:auto}
+.t-title  {font-size:28px;line-height:1.12;font-weight:700;letter-spacing:-.026em;font-optical-sizing:auto}
+.t-title2 {font-size:22px;line-height:1.18;font-weight:700;letter-spacing:-.022em}
+.t-head   {font-size:17px;line-height:1.29;font-weight:600;letter-spacing:-.015em}
+.t-body   {font-size:17px;line-height:1.41;font-weight:400;letter-spacing:-.008em}
+.t-callout{font-size:16px;line-height:1.35;font-weight:400;letter-spacing:-.006em}
+.t-sub    {font-size:15px;line-height:1.35;font-weight:400;letter-spacing:-.004em}
+.t-foot   {font-size:13px;line-height:1.38;font-weight:400;letter-spacing:0}
+.t-cap    {font-size:11px;line-height:1.33;font-weight:600;letter-spacing:.045em;text-transform:uppercase}
 
 .muted{color:var(--label-2)} .dim{color:var(--label-3)}
 .small{font-size:13px;line-height:1.38}
 .accent{color:var(--acc)}
 .capitalize{text-transform:capitalize}
-/* exercise names and body-part/equipment terms arrive lowercase from the dataset,
-   so tags and chips capitalise by default. Anything that is a unit or a sentence opts
-   back out — blanket-capitalising turned "60 kg" into "60 Kg" and a whole hint into
-   Title Case. The compound selectors are needed: .tag/.chip come later in this file
-   and would otherwise win on source order. */
 .nocap,.tag.nocap,.chip.nocap{text-transform:none}
 
 /* ---------------------------------------------------------------- layout -- */
@@ -178,33 +177,32 @@ button,.chip,.tile,.item,.wday,.cal-d,.swatch,.hm-c,.lrow,.seg button,.stp butto
   padding:calc(var(--sat) + 8px) var(--pad) calc(128px + var(--sab));
   max-width:560px;margin:0 auto;
 }
-/* while the rest timer floats above the tab bar, keep its height scrollable-past
-   (the rest variant is two rows tall — ~44px more than the single-row work timer) */
+/* while the rest timer floats above the tab bar, keep its height scrollable-past */
 body.resting #app{padding-bottom:calc(250px + var(--sab))}
-@keyframes viewfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@keyframes viewfade{from{opacity:0;transform:scale(.99)}to{opacity:1;transform:none}}
 #app.vfade{animation:viewfade var(--med) var(--ease)}
 
-/* large title, the way a nav bar does it */
+/* large title, the way an iOS nav bar does it */
 .hdr{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:8px 0 18px}
-.hdr h1{font-size:34px;line-height:1.06;font-weight:700;letter-spacing:-.028em}
-.hdr .sub{color:var(--label-2);font-size:15px;letter-spacing:-.006em;margin-top:4px}
+.hdr h1{font-size:34px;line-height:1.08;font-weight:700;letter-spacing:-.032em;font-optical-sizing:auto}
+.hdr .sub{color:var(--label-2);font-size:15px;letter-spacing:-.005em;margin-top:4px}
 
 .iconbtn{
   width:36px;height:36px;border-radius:50%;flex:none;
   background:var(--surface);color:var(--label);
   display:flex;align-items:center;justify-content:center;font-size:18px;
-  transition:background var(--fast),transform var(--fast);
+  transition:background var(--fast),transform var(--fast) var(--ease);
 }
-.iconbtn:active{background:var(--surface-2);transform:scale(.92)}
+.iconbtn:active{background:var(--surface-2);transform:scale(.90)}
 .iconbtn.on-ss{background:var(--acc-soft);color:var(--acc)}
 
 h4.sec{
-  font-size:13px;font-weight:400;letter-spacing:-.004em;color:var(--label-2);
-  text-transform:none;margin:22px 0 8px;padding:0 4px;
+  font-size:12px;font-weight:600;letter-spacing:.045em;color:var(--label-2);
+  text-transform:uppercase;margin:24px 0 8px 4px;padding:0;
 }
 .card h2{
-  font-size:13px;font-weight:400;letter-spacing:-.004em;color:var(--label-2);
-  text-transform:none;margin:0 0 12px;
+  font-size:12px;font-weight:600;letter-spacing:.045em;color:var(--label-2);
+  text-transform:uppercase;margin:0 0 12px;
 }
 .divider{height:var(--hair);background:var(--sep);margin:14px 0;border:0}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -215,24 +213,32 @@ h4.sec{
 .card{
   background:var(--surface);border-radius:var(--r-card);
   padding:16px;margin-bottom:12px;
+  border:var(--hair) solid var(--sep-op);
+  box-shadow:0 1px 3px rgba(0,0,0,.08);
 }
-.card .big{font-size:30px;font-weight:600;letter-spacing:-.026em;line-height:1.1}
+.card.tappable{transition:transform var(--fast) var(--ease),background var(--fast)}
+.card.tappable:active{transform:scale(.98);background:var(--surface-2)}
+.card .big{font-size:30px;font-weight:700;letter-spacing:-.028em;line-height:1.1;font-variant-numeric:tabular-nums}
 
 /* ------------------------------------------------------ inset group list -- */
 .sect{margin-bottom:22px}
 .sect-t{
-  font-size:13px;font-weight:400;color:var(--label-2);
-  letter-spacing:-.004em;padding:0 4px 7px;display:block;
+  font-size:12px;font-weight:600;color:var(--label-2);
+  text-transform:uppercase;letter-spacing:.045em;padding:0 12px 7px;display:block;
 }
-.sect-b{background:var(--surface);border-radius:var(--r-card);overflow:hidden}
-.sect-f{font-size:13px;color:var(--label-2);padding:7px 4px 0;line-height:1.38}
+.sect-b{
+  background:var(--surface);border-radius:var(--r-card);overflow:hidden;
+  border:var(--hair) solid var(--sep-op);
+  box-shadow:0 1px 3px rgba(0,0,0,.06);
+}
+.sect-f{font-size:13px;color:var(--label-2);padding:7px 12px 0;line-height:1.38}
 
 .lrow{
   display:flex;align-items:center;gap:12px;width:100%;text-align:left;
   padding:11px 14px;min-height:46px;position:relative;color:var(--label);
-  background:none;
+  background:none;transition:background var(--fast);
 }
-/* hairline starts after the icon rail so the list reads as one object */
+/* hairline starts after the icon rail so the list reads as one continuous Apple grouped table */
 .lrow+.lrow::before{
   content:'';position:absolute;left:14px;right:0;top:0;height:var(--hair);background:var(--sep);
 }
@@ -242,21 +248,19 @@ h4.sec{
   width:29px;height:29px;border-radius:7px;flex:none;font-size:18px;
   display:flex;align-items:center;justify-content:center;
   background:var(--tint,var(--acc));color:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.15);
 }
 .lrow-m{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .lrow-t{font-size:17px;letter-spacing:-.012em;line-height:1.25}
 .lrow-s{font-size:13px;color:var(--label-2);line-height:1.3}
-.lrow-v{color:var(--label-2);font-size:17px;letter-spacing:-.012em;flex:none}
-.lrow-c{color:var(--label);font-size:15px;flex:none;--icon-stroke:2.4}
+.lrow-v{color:var(--label-2);font-size:17px;letter-spacing:-.012em;flex:none;font-variant-numeric:tabular-nums}
+.lrow-c{color:var(--label-3);font-size:15px;flex:none;--icon-stroke:2.4}
 .lrow-k{color:var(--acc);font-size:17px;flex:none;--icon-stroke:2.4}
 .lrow.danger,.lrow.danger .lrow-t{color:var(--red)}
-/* an (i) before a row's control: painted small and dim so the control stays the loud thing,
-   but with a finger-sized target like everything else — the padding is the hit area and the
-   vertical negative margin keeps it from making the row taller. The horizontal ones pull the
-   hit area back under the row's own 12px gap instead of adding to it. */
+
 .helpbtn{
   color:var(--label-3);font-size:16px;background:none;line-height:0;flex:none;
-  margin:-11px -2px -11px -4px;padding:11px 4px;
+  margin:-11px -2px -11px -4px;padding:11px 4px;transition:color var(--fast);
 }
 .helpbtn:active{color:var(--label)}
 
@@ -264,61 +268,62 @@ h4.sec{
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;
   padding:14px 18px;border-radius:var(--r);font-size:17px;font-weight:600;
-  letter-spacing:-.012em;background:var(--surface-2);color:var(--label);
-  transition:transform var(--fast) var(--ease),background var(--fast),opacity var(--fast);
+  letter-spacing:-.015em;background:var(--surface-2);color:var(--label);
+  transition:transform var(--fast) var(--ease),background var(--fast),box-shadow var(--fast),opacity var(--fast);
 }
 .btn .icn{font-size:19px}
-.btn:active{transform:scale(.975)}
-.btn.primary{background:var(--acc);color:var(--on-acc)}
-.btn.primary:active{background:var(--acc-2)}
+.btn:active{transform:scale(.97)}
+.btn.primary{
+  background:var(--acc);color:var(--on-acc);
+  box-shadow:0 4px 14px -2px color-mix(in srgb,var(--acc) 45%,transparent);
+}
+.btn.primary:active{background:var(--acc-2);transform:scale(.97)}
 .btn.tinted{background:var(--acc-soft);color:var(--acc)}
 .btn.danger{background:color-mix(in srgb,var(--red) 15%,transparent);color:var(--red)}
 .btn.ghost,.btn.plain{background:none;color:var(--acc);font-weight:400}
-.btn.ghost:active,.btn.plain:active{background:var(--surface-2)}
+.btn.ghost:active,.btn.plain:active{background:var(--surface-2);transform:scale(.97)}
 .btn.sm{padding:8px 14px;width:auto;font-size:15px;border-radius:var(--r-sm);gap:5px}
 .btn.sm .icn{font-size:16px}
 .btn.xs{padding:5px 10px;width:auto;font-size:13px;border-radius:7px;gap:4px}
 .btn:disabled{opacity:.32;pointer-events:none}
 
-/* ----------------------------------------------------------- tab bar ----- */
+/* ----------------------------------------------------------- tab bar (Translucent Glass) -- */
 #tabbar{
   position:fixed;left:0;right:0;bottom:0;z-index:50;
   display:flex;justify-content:space-around;align-items:flex-end;
   padding:7px 6px calc(6px + var(--sab));
-  background:color-mix(in srgb,var(--bg-el) 72%,transparent);
-  backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);
-  border-top:var(--hair) solid var(--sep-op);
+  background:rgba(18,18,20,.76);
+  backdrop-filter:saturate(190%) blur(28px);-webkit-backdrop-filter:saturate(190%) blur(28px);
+  border-top:var(--hair) solid rgba(255,255,255,.12);
 }
-:root[data-theme="light"] #tabbar{background:rgba(249,249,251,.78)}
+:root[data-theme="light"] #tabbar{
+  background:rgba(246,246,248,.82);
+  border-top:var(--hair) solid rgba(0,0,0,.12);
+}
 #tabbar button{
   flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
   color:var(--label-3);font-size:10px;font-weight:500;letter-spacing:.005em;padding-top:3px;
-  transition:color var(--fast);
+  transition:color var(--fast),transform var(--fast) var(--ease);
 }
-/* The inactive tint is semi-transparent, so wherever two strokes cross inside an
-   icon (the calendar's hangers over its frame, the divider's caps on its sides)
-   the alpha doubled up and the icon read as a stack of loose layers. Carrying the
-   fade on the <svg> instead of in the stroke colour flattens the icon first and
-   fades it as one shape — and it does that for every icon, not just this one. */
-#tabbar button .icn{font-size:25px;--icon-stroke:1.65;color:var(--label)}
+#tabbar button:active{transform:scale(.93);opacity:.75}
+#tabbar button .icn{font-size:25px;--icon-stroke:1.65;color:var(--label);opacity:.65;transition:transform var(--fast) var(--ease),opacity var(--fast)}
 #tabbar button.on{color:var(--acc)}
 #tabbar button.on .icn{--icon-stroke:2;color:inherit;opacity:1}
 #tabbar button.start{margin-top:-24px}
 #tabbar button.start .cir{
   width:52px;height:52px;border-radius:50%;background:var(--acc);color:var(--on-acc);
   display:flex;align-items:center;justify-content:center;position:relative;
-  box-shadow:0 6px 18px -4px color-mix(in srgb,var(--acc) 55%,transparent);
+  box-shadow:0 8px 24px -4px color-mix(in srgb,var(--acc) 60%,transparent);
   transition:transform var(--fast) var(--ease);
 }
-#tabbar button.start:active .cir{transform:scale(.93)}
+#tabbar button.start:active .cir{transform:scale(.90)}
 #tabbar button.start .cir .icn{font-size:26px;--icon-stroke:2;color:inherit;opacity:1}
 #tabbar button.start span{color:var(--acc);font-weight:600}
-/* `.cir` is itself a <span>, so the label rules above and below reach it too and
-   outrank the `.cir` block — which is how the running state ended up painting an
-   orange play glyph onto an orange disc. Both states restate their own colour.
-   The disc is orange in either theme, so its glyph is black, not `--on-acc`. */
 #tabbar button.start .cir{color:var(--on-acc)}
-#tabbar button.start.rec .cir{background:var(--orange);color:#000;box-shadow:0 6px 18px -4px color-mix(in srgb,var(--orange) 55%,transparent)}
+#tabbar button.start.rec .cir{
+  background:var(--orange);color:#000;
+  box-shadow:0 8px 24px -4px color-mix(in srgb,var(--orange) 60%,transparent);
+}
 #tabbar button.start.rec span{color:var(--orange)}
 #tabbar button.start.rec .cir::after{
   content:'';position:absolute;inset:0;border-radius:50%;
@@ -327,22 +332,24 @@ h4.sec{
 @keyframes ping{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.45);opacity:0}}
 
 /* ------------------------------------------------------------ week strip -- */
+/* ------------------------------------------------------------ week strip -- */
 .week{display:flex;justify-content:space-between;gap:4px}
 .wday{
   flex:1;text-align:center;padding:8px 2px 9px;border-radius:10px;
-  background:none;border:none;transition:background var(--fast);
+  background:none;border:none;transition:background var(--fast),transform var(--fast) var(--ease);
 }
-.wday .lbl{font-size:11px;color:var(--label-3);font-weight:500;text-transform:uppercase;letter-spacing:.03em}
-.wday .num{font-size:17px;font-weight:400;margin:4px 0;letter-spacing:-.012em}
+.wday .lbl{font-size:11px;color:var(--label-3);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.wday .num{font-size:17px;font-weight:400;margin:4px 0;letter-spacing:-.012em;font-variant-numeric:tabular-nums}
 .wday .dot{width:5px;height:5px;border-radius:50%;background:transparent;margin:0 auto}
 .wday .dot.plan{background:var(--label-3)}
 .wday .dot.ovr{background:var(--orange)}
 .wday .dot.done{background:var(--acc)}
-.wday:active{background:var(--surface-2)}
+.wday:active{background:var(--surface-2);transform:scale(.92)}
 .wday.today .num{
   background:var(--acc);color:var(--on-acc);font-weight:600;
   width:31px;height:31px;border-radius:50%;display:flex;align-items:center;
   justify-content:center;margin:2px auto;
+  box-shadow:0 3px 10px -2px color-mix(in srgb,var(--acc) 50%,transparent);
 }
 
 /* ----------------------------------------------------------------- list -- */
@@ -350,18 +357,21 @@ h4.sec{
 .item{
   display:flex;align-items:center;gap:12px;background:var(--surface);
   border-radius:var(--r-card);padding:10px 12px;min-height:60px;
-  transition:background var(--fast);text-align:left;width:100%;
+  border:var(--hair) solid var(--sep-op);
+  box-shadow:0 1px 2px rgba(0,0,0,.04);
+  transition:background var(--fast),transform var(--fast) var(--ease);
+  text-align:left;width:100%;
 }
-.item:active{background:var(--surface-2)}
+.item:active{background:var(--surface-2);transform:scale(.98)}
 .thumb{width:50px;height:50px;border-radius:9px;object-fit:cover;background:#fff;flex:none}
 .thumb-x{
   display:flex;align-items:center;justify-content:center;font-size:21px;
   background:var(--surface-2);color:var(--label-2);
 }
-.item .tt{font-size:16px;font-weight:400;line-height:1.25;letter-spacing:-.009em}
+.item .tt{font-size:16px;font-weight:500;line-height:1.25;letter-spacing:-.01em}
 .item .ss{color:var(--label-2);font-size:13px;margin-top:2px}
 .item .grow{flex:1;min-width:0}
-.chev{color:var(--label);flex:none;font-size:15px;--icon-stroke:2.4}
+.chev{color:var(--label-3);flex:none;font-size:15px;--icon-stroke:2.4}
 .tag{
   display:inline-flex;align-items:center;gap:3px;background:var(--surface-2);
   color:var(--label-2);border-radius:6px;padding:3px 7px;font-size:12px;
@@ -377,11 +387,12 @@ h4.sec{
 .chips::-webkit-scrollbar{display:none}
 .chip{
   flex:none;padding:6px 13px;border-radius:99px;background:var(--surface);
+  border:var(--hair) solid var(--sep-op);
   font-size:14px;font-weight:400;color:var(--label);text-transform:capitalize;
-  letter-spacing:-.006em;transition:background var(--fast),color var(--fast);
+  letter-spacing:-.006em;transition:background var(--fast),color var(--fast),transform var(--fast) var(--ease);
 }
-.chip:active{background:var(--surface-2)}
-.chip.on{background:var(--acc);color:var(--on-acc);font-weight:500}
+.chip:active{background:var(--surface-2);transform:scale(.94)}
+.chip.on{background:var(--acc);color:var(--on-acc);font-weight:600;border-color:transparent}
 
 /* =========================== CONTROLS ==================================== */
 
@@ -397,6 +408,7 @@ h4.sec{
 .exnote{
   background:var(--surface);border-radius:var(--r);padding:13px 15px;
   line-height:1.45;white-space:pre-wrap;font-size:15px;margin-bottom:10px;color:var(--label-2);
+  border:var(--hair) solid var(--sep-op);
 }
 
 /* --- search field --- */
@@ -411,8 +423,9 @@ h4.sec{
   position:absolute;right:8px;width:22px;height:22px;border-radius:50%;
   background:var(--label-3);color:var(--bg);display:flex;align-items:center;
   justify-content:center;font-size:11px;--icon-stroke:3;
+  transition:transform var(--fast) var(--ease);
 }
-/* legacy .search wrapper */
+.searchf .clear:active{transform:scale(.88)}
 .search{position:relative}
 .search .input{padding-left:35px;background:var(--surface-2);border-radius:10px}
 :root[data-theme="light"] .search .input{background:rgba(118,118,128,.12)}
@@ -421,28 +434,24 @@ h4.sec{
   width:16px;height:16px;stroke:var(--label-3);fill:none;stroke-width:2.1;stroke-linecap:round;
 }
 
-/* --- switch --- */
+/* --- iOS fluid switch (with momentum stretch) --- */
 .sw{
-  width:51px;height:31px;border-radius:99px;background:var(--surface-3);
+  width:51px;height:31px;border-radius:999px;background:var(--surface-3);
   flex:none;padding:2px;display:flex;align-items:center;
   transition:background var(--med) var(--ease);
 }
 .sw .knob{
   width:27px;height:27px;border-radius:50%;background:#fff;
-  box-shadow:0 3px 8px rgba(0,0,0,.15),0 1px 1px rgba(0,0,0,.16);
-  transition:transform var(--med) var(--ease),width var(--fast) var(--ease);
+  box-shadow:0 3px 8px rgba(0,0,0,.18),0 1px 1px rgba(0,0,0,.16);
+  transition:transform 0.28s var(--ease),width 0.14s ease,background 0.24s ease;
 }
 .sw.on{background:var(--acc)}
 .sw.on .knob{transform:translateX(20px)}
-.sw:active .knob{width:31px}
-.sw.on:active .knob{transform:translateX(16px)}
+.sw:active .knob{width:32px}
+.sw.on:active .knob{transform:translateX(15px);width:32px}
 .sw:disabled{opacity:.4}
 
 /* --- segmented control --- */
-/* flex, not grid: an absolutely-positioned child of a GRID container is placed
-   into a grid area, so the sliding thumb resolved top/bottom against the wrong
-   box and overflowed the track. A flex container leaves abspos children on the
-   padding box, which is what the thumb needs. */
 .seg{
   position:relative;display:flex;
   background:var(--surface-3);border-radius:9px;padding:2px;isolation:isolate;
@@ -454,8 +463,8 @@ h4.sec{
   width:calc((100% - 4px)/var(--n));
   transform:translateX(calc(100% * var(--i)));
   background:var(--surface);border-radius:7px;
-  box-shadow:0 3px 8px rgba(0,0,0,.12),0 1px 1px rgba(0,0,0,.06);
-  transition:transform var(--med) var(--ease);
+  box-shadow:0 3px 8px rgba(0,0,0,.14),0 1px 1px rgba(0,0,0,.08);
+  transition:transform 0.28s var(--ease);
 }
 :root[data-theme="light"] .seg-sel{background:#fff}
 .seg button{
@@ -465,14 +474,12 @@ h4.sec{
 }
 .seg button .icn{font-size:16px}
 .seg button:not(.on){color:var(--label-2);font-weight:400}
-.seg button:active{opacity:.5}
-/* sitting in a list row: shrink to content instead of filling the row */
+.seg button:active{opacity:.55}
 .seg-inline{flex:none;min-width:132px}
 .seg-range{margin-bottom:10px}
 .seg-inline button{padding:5px 10px;font-size:13px;min-height:28px}
 .seg-inline button .icn{font-size:14px}
 
-/* native time input, restyled to sit in a row like a value label */
 .timef{
   background:var(--surface-2);border:none;border-radius:8px;padding:6px 10px;
   font-size:16px;color:var(--label);outline:none;font-variant-numeric:tabular-nums;
@@ -490,21 +497,21 @@ h4.sec{
 .stp button{
   width:40px;height:44px;flex:none;color:var(--label);font-size:16px;
   display:flex;align-items:center;justify-content:center;
-  transition:background var(--fast);--icon-stroke:2.2;
+  transition:background var(--fast),transform var(--fast) var(--ease);--icon-stroke:2.2;
 }
-.stp button:active{background:var(--surface-3)}
+.stp button:active{background:var(--surface-3);transform:scale(.92)}
 .stp .val{
   flex:1;min-width:0;display:flex;align-items:baseline;justify-content:center;gap:3px;padding:0 2px;
 }
 .stp .val i{font-style:normal;font-size:12px;color:var(--label-2);flex:none}
 .stp .num{
   width:100%;min-width:0;text-align:center;background:none;border:none;outline:none;
-  font-size:17px;font-weight:500;letter-spacing:-.012em;padding:0;
-  -moz-appearance:textfield;appearance:textfield;
+  font-size:17px;font-weight:600;letter-spacing:-.012em;padding:0;
+  -moz-appearance:textfield;appearance:textfield;font-variant-numeric:tabular-nums;
 }
 .stp .num::-webkit-inner-spin-button{display:none}
 
-/* --- slider --- */
+/* --- slider (Pointer Events with physical knob) --- */
 .sld{position:relative;height:32px;display:flex;align-items:center;cursor:pointer;touch-action:none}
 .sld-track{
   position:absolute;left:0;right:0;height:6px;border-radius:99px;
@@ -514,21 +521,21 @@ h4.sec{
 .sld-knob{
   position:absolute;width:26px;height:26px;border-radius:50%;background:#fff;
   transform:translateX(-50%);
-  box-shadow:0 4px 10px rgba(0,0,0,.22),0 1px 2px rgba(0,0,0,.16);
+  box-shadow:0 4px 12px rgba(0,0,0,.26),0 1px 2px rgba(0,0,0,.18);
   transition:transform var(--fast) var(--ease);
 }
-.sld.dragging .sld-knob{transform:translateX(-50%) scale(1.14)}
+.sld.dragging .sld-knob{transform:translateX(-50%) scale(1.18)}
 
 /* --- checkbox --- */
 .chk,.ck{
   width:30px;height:30px;border-radius:50%;flex:none;
   display:flex;align-items:center;justify-content:center;
   background:none;box-shadow:inset 0 0 0 1.8px var(--label-4);color:transparent;
-  transition:background var(--fast),box-shadow var(--fast),color var(--fast),transform var(--fast);
+  transition:background var(--fast),box-shadow var(--fast),color var(--fast),transform var(--fast) var(--ease);
 }
 .chk .icn{font-size:16px;--icon-stroke:2.6}
 .chk.on{background:var(--acc);box-shadow:none;color:var(--on-acc)}
-.chk:active,.ck:active{transform:scale(.9)}
+.chk:active,.ck:active{transform:scale(.88)}
 .ck svg{
   width:16px;height:16px;stroke:transparent;fill:none;stroke-width:2.6;
   stroke-linecap:round;stroke-linejoin:round;transition:stroke var(--fast);
@@ -614,68 +621,79 @@ h4.sec{
 .cfgrow .stp button{width:30px}
 .cfgrow .stp-l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* --- rest timer --- */
+/* --- rest timer (Apple Floating Capsule) --- */
 #timer{
   position:fixed;left:12px;right:12px;bottom:calc(88px + var(--sab));z-index:60;
-  /* nearly opaque: the set rows underneath were reading through the old 82% and made the
-     clock hard to pick out mid-set. The blur stays, so it still sits above the page. */
-  background:color-mix(in srgb,var(--surface) 97%,transparent);
-  backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);
-  border-radius:var(--r-lg);padding:12px 14px;
+  background:rgba(28,28,30,.90);
+  backdrop-filter:saturate(190%) blur(30px);-webkit-backdrop-filter:saturate(190%) blur(30px);
+  border-radius:20px;padding:12px 16px;
   display:flex;align-items:center;gap:12px;
-  box-shadow:0 12px 34px -8px rgba(0,0,0,.55);
-  animation:slideup var(--med) var(--ease);
+  box-shadow:0 16px 36px -8px rgba(0,0,0,.5),0 0 0 var(--hair) rgba(255,255,255,.14);
+  animation:slideup 0.36s var(--ease);
 }
-@keyframes slideup{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
-#timer .t{font-size:26px;font-weight:600;letter-spacing:-.026em;font-variant-numeric:tabular-nums;min-width:66px}
-#timer .bar{flex:1;height:4px;background:var(--surface-3);border-radius:99px;overflow:hidden}
-#timer .bar i{display:block;height:100%;background:var(--acc);transition:width 1s linear}
-/* rest variant: −15/+15/Skip and the clock won't share one line on a phone, so the clock and
-   bar take the top row and the controls take their own. The work timer keeps a single row —
-   it only ever has two buttons. */
+:root[data-theme="light"] #timer{
+  background:rgba(255,255,255,.92);
+  box-shadow:0 16px 36px -8px rgba(0,0,0,.16),0 0 0 var(--hair) rgba(0,0,0,.08);
+}
+@keyframes slideup{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+#timer .t{font-size:26px;font-weight:700;letter-spacing:-.028em;font-variant-numeric:tabular-nums;min-width:66px}
+#timer .bar{flex:1;height:5px;background:var(--surface-3);border-radius:99px;overflow:hidden}
+#timer .bar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width 1s linear}
 #timer.rest{flex-direction:column;align-items:stretch;gap:10px}
 #timer.rest .head{display:flex;align-items:center;gap:12px}
 #timer.rest .acts{display:flex;align-items:center;gap:8px}
-#timer.rest .acts .btn{padding-top:11px;padding-bottom:11px}   /* sweaty hands, mid-set */
+#timer.rest .acts .btn{padding-top:11px;padding-bottom:11px}
 #timer.rest .acts .skip{margin-left:auto;min-width:84px}
-/* work timer (issue #16): the same bar doing the opposite job — outlined and tinted so a
-   glance tells "you are holding this" apart from "you are recovering". */
 #timer.working{border:var(--hair) solid var(--acc)}
 #timer.working .t{color:var(--acc)}
 #timer.working .grow{flex:1;min-width:0}
 #timer.working .lbl{
   font-size:12px;color:var(--label-2);margin-bottom:5px;text-transform:capitalize;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;
 }
 
 /* ---------------------------------------------------------------- modal -- */
 #modal-root{position:fixed;inset:0;z-index:100;display:none}
 #modal-root.open{display:block}
 .mback{
-  position:absolute;inset:0;background:rgba(0,0,0,.4);
-  backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
+  position:absolute;inset:0;background:rgba(0,0,0,.45);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
   touch-action:none;overscroll-behavior:none;
 }
 .sheet{
   position:absolute;left:0;right:0;bottom:0;background:var(--bg-el);
-  border-radius:var(--r-xl) var(--r-xl) 0 0;
+  border-radius:26px 26px 0 0;
+  border-top:var(--hair) solid rgba(255,255,255,.14);
+  box-shadow:0 -12px 48px -12px rgba(0,0,0,.6);
   padding:8px 18px calc(20px + var(--sab));
   max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  animation:sheetup .34s var(--ease);
+  animation:sheetup .36s var(--ease);
   overscroll-behavior:contain;touch-action:pan-y;will-change:transform;
 }
-:root[data-theme="light"] .sheet{background:var(--bg)}
+:root[data-theme="light"] .sheet{
+  background:var(--bg);
+  border-top:var(--hair) solid rgba(0,0,0,.08);
+}
 @keyframes sheetup{from{transform:translateY(100%)}to{transform:none}}
-.sheet .grab{width:36px;height:5px;border-radius:99px;background:var(--label-4);margin:6px auto 14px}
-.sheet h3{font-size:20px;font-weight:600;letter-spacing:-.021em;margin-bottom:14px}
+.sheet .grab{
+  width:36px;height:5px;border-radius:2.5px;background:var(--label-4);
+  margin:8px auto 16px;transition:background var(--fast);
+}
+.sheet h3{font-size:20px;font-weight:700;letter-spacing:-.022em;margin-bottom:14px}
 .center{
   position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-  width:min(84vw,300px);background:var(--bg-el);border-radius:var(--r-lg);padding:20px;
-  box-shadow:0 20px 60px -12px rgba(0,0,0,.5);
-  animation:pop .28s var(--ease);
+  width:min(86vw,320px);background:var(--bg-el);border-radius:22px;padding:22px;
+  border:var(--hair) solid rgba(255,255,255,.14);
+  backdrop-filter:saturate(190%) blur(30px);-webkit-backdrop-filter:saturate(190%) blur(30px);
+  box-shadow:0 24px 60px -12px rgba(0,0,0,.6);
+  animation:pop .30s var(--ease);
 }
-:root[data-theme="light"] .center{background:#fff}
-@keyframes pop{from{transform:translate(-50%,-50%) scale(.94);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
+:root[data-theme="light"] .center{
+  background:#fff;
+  border:var(--hair) solid rgba(0,0,0,.08);
+  box-shadow:0 24px 60px -12px rgba(0,0,0,.2);
+}
+@keyframes pop{from{transform:translate(-50%,-50%) scale(.92);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
 
 /* --- RIR/RPE conversion table (effort help sheet) ---
    The two scales only click when you see them side by side, so the numbers get fixed-width
@@ -823,18 +841,32 @@ h4.sec{
 }
 .pr .icn{font-size:13px}
 
-/* --- toast --- */
+/* --- toast (Apple Dynamic Capsule) --- */
 #toast{
-  position:fixed;left:50%;transform:translateX(-50%) translateY(6px);
+  position:fixed;left:50%;transform:translateX(-50%) translateY(10px) scale(.95);
   bottom:calc(96px + var(--sab));z-index:200;
-  background:color-mix(in srgb,var(--surface-2) 88%,transparent);
-  backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);
-  border-radius:99px;padding:11px 20px;font-size:15px;font-weight:500;
-  box-shadow:0 10px 30px -6px rgba(0,0,0,.5);
-  opacity:0;pointer-events:none;transition:opacity var(--med),transform var(--med) var(--ease);
-  max-width:88vw;text-align:center;
+  background:rgba(38,38,42,.92);
+  backdrop-filter:saturate(190%) blur(28px);-webkit-backdrop-filter:saturate(190%) blur(28px);
+  border:var(--hair) solid rgba(255,255,255,.14);
+  border-radius:999px;padding:12px 22px;font-size:15px;font-weight:600;letter-spacing:-.01em;
+  box-shadow:0 14px 36px -6px rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;
+  transition:opacity var(--med) var(--ease),transform var(--med) var(--ease);
+  max-width:88vw;text-align:center;color:#fff;
 }
-#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+:root[data-theme="light"] #toast{
+  background:rgba(255,255,255,.94);color:#000;
+  border:var(--hair) solid rgba(0,0,0,.08);
+  box-shadow:0 14px 36px -6px rgba(0,0,0,.15);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+
+@media (prefers-reduced-transparency: reduce){
+  #tabbar,#timer,.sheet,.center,#toast{
+    backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+    background:var(--bg-el)!important;
+  }
+}
 
 /* ---------------------------------------------------------------- misc --- */
 .empty{text-align:center;color:var(--label-2);padding:44px 20px;font-size:15px;line-height:1.45}
