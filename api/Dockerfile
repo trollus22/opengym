@@ -1,7 +1,7 @@
 # Build context is the repo root (see docker-compose.yml, same as web/Dockerfile) — api/watch/
 # needs frontend/src/lib/ available to COPY, since it imports the training logic straight from
 # there rather than duplicating it (see docs/WATCH_APP.md).
-FROM node:22-alpine
+FROM node:25-alpine
 WORKDIR /app/api
 
 # ── AI Coach runtimes ─────────────────────────────────────────────────────────
