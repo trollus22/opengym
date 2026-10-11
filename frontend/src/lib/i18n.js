@@ -3,7 +3,11 @@
 // import.meta.glob entry), so the initial bundle stays English-only.
 // Exercise instructions come from separately generated packs in src/instr/ (one per
 // language, from the upstream dataset) — also lazy-loaded on language switch.
-import { useSyncExternalStore } from 'react'
+//
+// No React import here on purpose: api/ imports this file straight from plain Node for the
+// watch app (see docs/WATCH_APP.md), and a backend has no business pulling in a UI framework.
+// The one React hook this module used to export lives in useLang.js instead — see subscribeLang
+// below.
 
 // UI languages. de/pt have no instruction pack upstream — instructions fall back to English.
 export const LANGS = {
@@ -17,8 +21,12 @@ const DATE_LOCALES = {
   pl: 'pl-PL', tr: 'tr-TR', ru: 'ru-RU', zh: 'zh-CN', ko: 'ko-KR', hi: 'hi-IN'
 }
 
-const localePacks = import.meta.glob('../locales/*.js')
-const instrPacks = import.meta.glob('../instr/*.js')
+// import.meta.glob is a Vite build-time macro — it doesn't exist outside a Vite bundle (e.g.
+// when api/ imports the pure lib files under it, such as progression.js, from plain Node for
+// the watch app). Guarded so the module graph stays importable there; nothing calls setLang()
+// outside the browser, so the empty fallback is never actually read.
+const localePacks = typeof import.meta.glob === 'function' ? import.meta.glob('../locales/*.js') : {}
+const instrPacks = typeof import.meta.glob === 'function' ? import.meta.glob('../instr/*.js') : {}
 
 let lang = 'en'
 let dict = {}
@@ -50,7 +58,8 @@ export async function setLang(l) {
   notify()
 }
 
-// Re-renders the subscribing component (and its children) whenever the language changes.
-export function useLang() {
-  return useSyncExternalStore(fn => { subs.add(fn); return () => subs.delete(fn) }, () => version)
-}
+// Plain subscribe/version pair for useLang.js's useSyncExternalStore — kept as functions here
+// (rather than exporting `subs`/`version` directly) so this module's only public surface is
+// functions, same as everything else in it.
+export const subscribeLang = fn => { subs.add(fn); return () => subs.delete(fn) }
+export const langVersion = () => version

@@ -1,0 +1,116 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: 'OpenGym Server URL (e.g. https://your-server.com)'
+        required: false
+        default: 'https://harris-excess-respect-shops.trycloudflare.com'
+      app_name:
+        description: 'App Name'
+        required: false
+        default: 'openGym'
+      bundle_id:
+        description: 'Bundle Identifier'
+        required: false
+        default: 'ch.duartesantos.opengym'
+  push:
+    branches:
+      - main
+      - feat/username-password-auth
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/build-ios.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-ipa:
+    name: Build IPA for SideStore / AltStore
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Configure Server URL and Metadata
+        working-directory: frontend
+        run: |
+          SERVER_URL="${{ github.event.inputs.server_url || 'https://harris-excess-respect-shops.trycloudflare.com' }}"
+          APP_NAME="${{ github.event.inputs.app_name || 'openGym' }}"
+          BUNDLE_ID="${{ github.event.inputs.bundle_id || 'ch.duartesantos.opengym' }}"
+
+          node -e "
+            const fs = require('fs');
+            const file = 'capacitor.config.json';
+            const config = JSON.parse(fs.readFileSync(file, 'utf8'));
+            if ('$SERVER_URL') {
+              config.server = {
+                url: '$SERVER_URL',
+                cleartext: true,
+                allowNavigation: ['*']
+              };
+            }
+            if ('$APP_NAME') config.appName = '$APP_NAME';
+            if ('$BUNDLE_ID') config.appId = '$BUNDLE_ID';
+            fs.writeFileSync(file, JSON.stringify(config, null, 2));
+            console.log('Updated capacitor.config.json:', config);
+          "
+
+      - name: Build Web Application
+        working-directory: frontend
+        run: npm run build
+
+      - name: Sync Capacitor iOS
+        working-directory: frontend
+        run: npx cap sync ios
+
+      - name: Install CocoaPods
+        working-directory: frontend/ios/App
+        run: |
+          pod install --repo-update
+
+      - name: Build Archive (Unsigned for Sideloading)
+        working-directory: frontend/ios/App
+        run: |
+          xcodebuild archive \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
+
+      - name: Package .ipa for SideStore
+        working-directory: frontend/ios/App
+        run: |
+          mkdir -p build/Payload
+          cp -R build/App.xcarchive/Products/Applications/App.app build/Payload/
+          # Sign ad-hoc so packaging is valid
+          codesign --force --deep --sign - build/Payload/App.app
+          cd build
+          zip -r -q openGym.ipa Payload
+          echo "IPA size:"
+          ls -lh openGym.ipa
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openGym-ios-ipa
+          path: frontend/ios/App/build/openGym.ipa
+          retention-days: 14

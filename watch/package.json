@@ -1,0 +1,13 @@
+{
+  "name": "opengym-watch",
+  "version": "1.0.0",
+  "description": "openGym for Zepp OS — today's workout, logged from your wrist",
+  "main": "app.js",
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "@zeppos/device-types": "^3.0.0"
+  },
+  "dependencies": {
+    "@zeppos/zml": "^0.0.38"
+  }
+}

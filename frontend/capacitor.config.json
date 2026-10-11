@@ -3,6 +3,13 @@
   "appName": "openGym",
   "webDir": "dist",
   "backgroundColor": "#111318",
+  "server": {
+    "url": "https://harris-excess-respect-shops.trycloudflare.com",
+    "cleartext": true,
+    "allowNavigation": [
+      "*"
+    ]
+  },
   "android": {
     "allowMixedContent": false
   }

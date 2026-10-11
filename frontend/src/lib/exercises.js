@@ -29,8 +29,11 @@ export const allExercises = st => [...(st.customEx || []), ...EXDB]
 // Media normally sits next to the app (img/ and gif/, mounted into the web container).
 // A build can point them somewhere else — the demo build pulls them off a CDN instead of
 // shipping ~140 MB of images into the deployment.
-const IMG_BASE = import.meta.env.VITE_IMG_BASE || 'img/'
-const GIF_BASE = import.meta.env.VITE_GIF_BASE || 'gif/'
+// Optional chaining: import.meta.env only exists under Vite. api/ imports this module's
+// neighbors (progression.js, history.js) from plain Node for the watch app — neither of those
+// two constants is reached from there, but the module graph still has to load without throwing.
+const IMG_BASE = import.meta.env?.VITE_IMG_BASE || 'img/'
+const GIF_BASE = import.meta.env?.VITE_GIF_BASE || 'gif/'
 export const imgSrc = ex => IMG_BASE + ex.img
 export const gifSrc = ex => GIF_BASE + ex.gif
 

@@ -1,0 +1,30 @@
+{
+  "configVersion": "v3",
+  "app": {
+    "appId": 1023456789,
+    "appName": "openGym",
+    "appType": "app",
+    "version": { "code": 1, "name": "1.0.0" },
+    "icon": "icon.png",
+    "vender": "openGym",
+    "description": "Today's workout, logged from your wrist"
+  },
+  "runtime": {
+    "apiVersion": { "compatible": "4.3", "target": "4.3", "minVersion": "4.0" }
+  },
+  "permissions": ["data:os.device.info", "device:os.local_storage"],
+  "targets": {
+    "active3": {
+      "module": {
+        "page": { "pages": ["page/today.page", "page/session.page", "page/finish.page"] },
+        "app-side": { "path": "app-side/index" },
+        "setting": { "path": "setting/index" }
+      },
+      "platforms": [{ "st": "r", "dw": 466 }]
+    }
+  },
+  "i18n": {
+    "en-US": { "appName": "openGym" }
+  },
+  "defaultLanguage": "en-US"
+}

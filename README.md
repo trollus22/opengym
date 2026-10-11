@@ -97,6 +97,7 @@ as a home-screen app, passkey sign-in, offline support, sync across your phone a
 - 📥 **Bring your history with you** — import from **FitNotes** (Android and iOS), **Strong** and **Hevy**, or body weight straight out of an **Apple Health** export. Exercise names are matched against the library and anything unrecognised becomes one of your own exercises, so nothing in the file is dropped
 - 📦 **Yours to keep** — one-tap JSON export/import, guest mode, **no telemetry**
 - 📱 **Standalone Android app** — the whole tracker as a sideloadable APK: no account, no server, data on the phone, native workout reminders ([download](https://opengym.duarte-santos.ch))
+- ⌚ **Watch app** (Amazfit Active 3 Premium / Zepp OS) — today's plan with your live-computed weights, logged straight from your wrist, syncing back when you finish. **[Setup →](docs/WATCH_APP.md)**
 
 ## Quick start (self-host)
 

@@ -19,6 +19,7 @@ import * as coachConfig from './coach/config.js';
 import * as coachJobs from './coach/jobs.js';
 import { coachRoutes } from './coach/routes.js';
 import { startCadence } from './coach/cadence.js';
+import { watchRoutes } from './watch/routes.js';
 
 const PORT = +(process.env.PORT || 3000);
 const DATA = process.env.DATA_DIR || '/data';
@@ -292,6 +293,30 @@ function livePresence(uid) {
 }
 setInterval(() => { for (const [k, v] of presence) if (Date.now() - v.updatedAt > PRESENCE_TTL) presence.delete(k); }, 30000).unref();
 
+// Shared by POST /api/login and POST /api/watch/login — same throttle, same check either way;
+// only what the caller gets back on success differs (a cookie vs. a token in the body — the
+// watch's Side Service fetch can't reliably read Set-Cookie the way a browser or the mobile
+// app's WebView can, so it needs the session token somewhere it can actually read it).
+async function attemptLogin(body, req) {
+  const username = String(body.username || '').trim();
+  const password = String(body.password || '');
+  const ip = clientIp(req);
+  const userKey = username.toLowerCase() + '|' + ip;
+  const ipKey = '|' + ip;
+  if (loginBlocked(userKey) || loginBlocked(ipKey))
+    return { status: 429, error: 'too many failed attempts — try again in a few minutes' };
+  const user = store.findByUsername(username);
+  const ok = verifyPassword(password, user ? user.password_hash : DUMMY_HASH);
+  if (!user || !ok) {
+    noteLoginFailure(userKey);
+    noteLoginFailure(ipKey);
+    return { status: 401, error: 'wrong username or password' };
+  }
+  if (user.disabled) return { status: 403, error: 'this account has been disabled' };
+  clearLoginFailures(userKey);
+  return { user };
+}
+
 /* ---------- routes ---------- */
 const routes = {
   'GET /api/health': async (req, res) => json(res, 200, { ok: true, users: db.users.length }),
@@ -357,24 +382,10 @@ const routes = {
   // used to work out who has an account here.
   'POST /api/login': async (req, res) => {
     const body = await readBody(req);
-    const username = String(body.username || '').trim();
-    const password = String(body.password || '');
-    const ip = clientIp(req);
-    const userKey = username.toLowerCase() + '|' + ip;
-    const ipKey = '|' + ip;
-    if (loginBlocked(userKey) || loginBlocked(ipKey))
-      return json(res, 429, { error: 'too many failed attempts — try again in a few minutes' });
-    const user = store.findByUsername(username);
-    const ok = verifyPassword(password, user ? user.password_hash : DUMMY_HASH);
-    if (!user || !ok) {
-      noteLoginFailure(userKey);
-      noteLoginFailure(ipKey);
-      return json(res, 401, { error: 'wrong username or password' });
-    }
-    if (user.disabled) return json(res, 403, { error: 'this account has been disabled' });
-    clearLoginFailures(userKey);
-    console.log('login', user.username);
-    json(res, 200, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(user) });
+    const r = await attemptLogin(body, req);
+    if (r.error) return json(res, r.status, { error: r.error });
+    console.log('login', r.user.username);
+    json(res, 200, { user: publicUser(r.user) }, { 'Set-Cookie': sessionCookie(r.user) });
   },
 
   // Change your own password. Bumping the session version signs every other device out, which is
@@ -600,7 +611,10 @@ const routes = {
   // Routes live in coach/routes.js and are handed the helpers above rather than importing
   // them: they are closures over db and SECRET, and passing them in keeps that module free of
   // a cycle. Every one of them is inert while the feature is unconfigured.
-  ...coachRoutes({ json, readBody, readSession, requireAdmin })
+  ...coachRoutes({ json, readBody, readSession, requireAdmin }),
+
+  /* ---------- watch app (Zepp OS) ---------- */
+  ...watchRoutes({ json, readBody, readSession, attemptLogin, makeSession, publicUser })
 };
 
 /* ---------- Coach: boot recovery, notifications, scheduled reviews ---------- */

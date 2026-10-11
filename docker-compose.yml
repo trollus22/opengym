@@ -25,7 +25,9 @@ services:
   # image: prebuilt (docker compose pull). build: from source (docker compose up --build).
   api:
     image: ghcr.io/duartesantos8/opengym-api:latest
-    build: ./api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
     restart: unless-stopped
     env_file: .env
     environment:
